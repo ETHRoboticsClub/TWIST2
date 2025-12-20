@@ -37,8 +37,8 @@ nav:
   - Home: index.md
 
   - Getting started:
-      - Installation: Getting Started/Installation.md
-      - Environments (`twist2` & `gmr`): Getting Started/Environments.md
+      - Installation: GettingStarted/Installation.md
+      - Environments (`twist2` & `gmr`): GettingStarted/Environments.md
 
   - TWIST2 Concepts:
       - System Overview: Concepts/SystemOverview.md

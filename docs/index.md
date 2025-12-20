@@ -7,7 +7,7 @@ By Yanjie Ze, Siheng Zhao, Weizhuo Wang, Angjoo Kanazawa†, Rocky Duan†, Piet
 [arXiv](https://arxiv.org/abs/2511.02832) ·
 [Video](https://youtu.be/lTtEvI0kUfo)
 
-![Banner for TWIST](../assets/TWIST2.png)
+![Banner for TWIST](media/TWIST2.png)
 
 ---
 
@@ -90,17 +90,12 @@ TWIST2 is built around several key components:
   - [Training & Deployment Overview](UserGuide/TrainingAndDeployment.md)
   - [Teleop Pipeline](UserGuide/TeleopPipeline.md)
   - [Sim2Real with Unitree (EN)](UserGuide/Sim2Real_Unitree_en.md)
-  - [Sim2Real with Unitree (ZH)](UserGuide/Sim2Real_Unitree_zh.md)
   - [GUI Usage](UserGuide/GUI.md) – control everything via `gui.sh` (simulation, real robot, data collection, neck, ZED, etc.)
 
 - **Hardware & Concepts**
   - [Neck Module](Concepts/NeckModule.md)
   - *(optional)* System overview: `Concepts/SystemOverview.md`
-
-- **References**
-  - [Citations & Contact](Reference/Citations.md)
-  - [Acknowledgments](Reference/Acknowledgments.md)
-
+  
 ---
 
 ## Citation

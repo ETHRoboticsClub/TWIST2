@@ -40,7 +40,7 @@ Recorder / Visualization
 
 ## Environments & prerequisites
 
-- **Conda envs:** `twist2` (Python 3.8, Isaac Gym/MuJoCo, policy deployment) and `gmr` (Python 3.10+, retargeting/teleop). See [Environments](../Getting%20Started/Environments.md) and [Installation](../Getting%20Started/Installation.md).
+- **Conda envs:** `twist2` (Python 3.8, Isaac Gym/MuJoCo, policy deployment) and `gmr` (Python 3.10+, retargeting/teleop). See [Environments](../GettingStarted/Environments.md) and [Installation](../GettingStarted/Installation.md).
 - **Redis:** must be running and reachable by all processes (same host or LAN IP).
 - **GPU drivers/CUDA:** required for Isaac Gym, ONNX GPU, and GMR acceleration.
 - **PICO/XRoboToolkit:** needed only for teleop; ensure services run before launching.

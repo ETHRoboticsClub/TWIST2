@@ -1,6 +1,6 @@
 # Training & Deployment Overview
 
-This guide shows how to train a TWIST2 controller, export it to ONNX, and run it in simulation or on the real robot. It assumes you already followed the environment setup in [Installation](../Getting%20Started/Installation.md) (both `twist2` and `gmr` conda envs) and have Redis running.
+This guide shows how to train a TWIST2 controller, export it to ONNX, and run it in simulation or on the real robot. It assumes you already followed the environment setup in [Installation](../GettingStarted/Installation.md) (both `twist2` and `gmr` conda envs) and have Redis running.
 
 ---
 
@@ -115,8 +115,8 @@ It captures vision + `state_*` + `action_*` from Redis.
 
 ## Related docs
 
-- [Installation](../Getting%20Started/Installation.md)  
-- [Environments (`twist2` & `gmr`)](../Getting%20Started/Environments.md)  
+- [Installation](../GettingStarted/Installation.md)  
+- [Environments (`twist2` & `gmr`)](../GettingStarted/Environments.md)  
 - [Teleop Pipeline](TeleopPipeline.md)  
 - [Sim2Real with Unitree (EN)](Sim2Real_Unitree_en.md)  
 - [Sim2Sim Verification](Sim2Sim.md)  

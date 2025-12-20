@@ -1,6 +1,6 @@
 # Teleop Pipeline
 
-This guide shows how to run live teleoperation with PICO + XRoboToolkit + GMR, and how it connects to the TWIST2 low-level controller (sim or real). It assumes you have the `gmr` and `twist2` conda envs ready and Redis running. For installation details, see [Installation](../Getting%20Started/Installation.md).
+This guide shows how to run live teleoperation with PICO + XRoboToolkit + GMR, and how it connects to the TWIST2 low-level controller (sim or real). It assumes you have the `gmr` and `twist2` conda envs ready and Redis running. For installation details, see [Installation](../GettingStarted/Installation.md).
 
 ---
 
@@ -115,8 +115,8 @@ Swap the suffix if you use a different robot alias.
 
 ## Related docs
 
-- [Installation](../Getting%20Started/Installation.md)
-- [Environments (`twist2` & `gmr`)](../Getting%20Started/Environments.md)
+- [Installation](../GettingStarted/Installation.md)
+- [Environments (`twist2` & `gmr`)](../GettingStarted/Environments.md)
 - [Training & Deployment Overview](TrainingAndDeployment.md)
 - [Sim2Real with Unitree (EN)](Sim2Real_Unitree_en.md)
 - [Sim2Sim Verification](Sim2Sim.md)
