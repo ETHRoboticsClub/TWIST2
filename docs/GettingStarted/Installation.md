@@ -22,7 +22,7 @@ If you just want to *run* the provided controller and teleop (and not train), yo
 conda env remove -n twist2          # optional, only if it already exists
 conda create -n twist2 python=3.8
 conda activate twist2
-````
+```
 
 This environment will be used for:
 

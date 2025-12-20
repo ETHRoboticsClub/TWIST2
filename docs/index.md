@@ -21,13 +21,6 @@ It combines:
 - **RL-based low-level controllers** trained in simulation  
 - A modular pipeline for **sim-to-sim** and **sim-to-real** deployment
 
-This documentation is meant to make it easy to:
-
-- Install and configure the full TWIST2 stack
-- Run the provided policies in simulation and on real robots
-- Operate the teleop + data collection pipeline with PICO VR & XRoboToolkit
-- Extend the system with your own controllers, datasets, or hardware
-
 If you are new to the project, start with:
 
 - **[Installation](GettingStarted/Installation.md)** – set up environments, dependencies, Redis, GMR, and PICO SDK  
@@ -111,7 +104,7 @@ If you use TWIST2 in your work, please cite:
   year    = {2025},
   journal = {arXiv preprint arXiv:2511.02832}
 }
-````
+```
 
 Related works:
 

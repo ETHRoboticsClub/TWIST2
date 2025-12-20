@@ -1,122 +1,344 @@
-# Teleop Pipeline
+# Teleoperation Pipeline
 
-This guide shows how to run live teleoperation with PICO + XRoboToolkit + GMR, and how it connects to the TWIST2 low-level controller (sim or real). It assumes you have the `gmr` and `twist2` conda envs ready and Redis running. For installation details, see [Installation](../GettingStarted/Installation.md).
+Control your robot through live teleoperation using PICO VR headset, XRoboToolkit, and GMR motion retargeting.
 
----
+## Overview
 
-## What the pipeline does
+The teleoperation pipeline enables real-time control of the robot through human body movements:
 
-- **Headset + controllers + trackers** stream body/hand poses via XRoboToolkit.
-- **GMR teleop script** retargets human motion to robot mimic observations and hand poses.
-- **Redis** carries actions (`action_*`) to the low-level controller.
-- **Low-level controller** (sim or real) runs the ONNX policy and sends PD targets to the robot or MuJoCo.
+1. **VR Capture**: PICO headset and trackers capture body/hand poses
+2. **Motion Retargeting**: GMR converts human motion to robot actions
+3. **Redis Communication**: Actions are published to Redis channels
+4. **Policy Execution**: Low-level controller runs the ONNX policy
+5. **Robot Control**: Commands are sent to real hardware or simulation
 
----
+For installation details, see [Installation](../GettingStarted/Installation.md).
 
-## Requirements
+## Prerequisites
 
-- **Hardware:** PICO 4 Ultra (enterprise mode with VST), body trackers, VR controllers; Unitree G1/H1/H1_2 for real runs; E-stop available.
-- **Software/services:**
-  - XRoboToolkit PC Service installed and running on the PC.
-  - PICO headset with XRoboToolkit app installed (developer mode + adb for install).
-  - Redis server reachable by both teleop PC and controller PC.
-- **Envs:** `gmr` (Python 3.10+) for teleop; `twist2` (Python 3.8) for low-level controller.
-- **Network:** Stable LAN; set `redis_ip` in `teleop.sh` if Redis is remote.
+### Hardware Requirements
 
----
+| Component | Specification |
+|-----------|---------------|
+| **VR Headset** | PICO 4 Ultra (enterprise mode with VST enabled) |
+| **Controllers** | PICO VR controllers (left and right) |
+| **Trackers** | PICO Motion Trackers compatible with XRoboToolkit |
+| **Robot** | Unitree G1/H1/H1_2 (for real deployment) |
+| **Safety** | Physical E-stop button (mandatory for real robot) |
 
-## Launch sequences
+### Software Requirements
 
-### A) Teleop → Real robot
-1. Terminal A (`twist2`): low-level controller to robot
-   ```bash
-   conda activate twist2
-   ./sim2real.sh      # edit NIC inside if needed
-   ```
-2. Terminal B (`gmr`): teleop publisher
-   ```bash
-   conda activate gmr
-   ./teleop.sh        # edit redis_ip/height/target_fps if needed
-   ```
+| Component | Details |
+|-----------|---------|
+| **XRoboToolkit PC Service** | Installed and running on PC |
+| **XRoboToolkit App** | Installed on PICO headset (requires developer mode + adb) |
+| **Redis Server** | Running and accessible to both teleop and controller PCs |
+| **Conda Environments** | `gmr` (Python 3.10+) for teleop, `twist2` (Python 3.8) for controller |
 
-### B) Teleop → Simulation (MuJoCo)
-1. Terminal A (`twist2`): controller in sim
-   ```bash
-   conda activate twist2
-   ./sim2sim.sh
-   ```
-2. Terminal B (`gmr`): teleop publisher
-   ```bash
-   conda activate gmr
-   ./teleop.sh
-   ```
+### Network Requirements
 
-### C) Optional: record while teleoping
-Add a third terminal:
+- Stable LAN connection (wired recommended)
+- Low latency between teleop PC and controller PC
+- Redis server accessible from both machines
+- Configure `redis_ip` in [teleop.sh](../../teleop.sh) if using remote Redis
+
+## Quick Start
+
+Choose your deployment target:
+
+### Real Robot Deployment
+
+**Terminal 1**: Start the low-level controller
+
+```bash
+conda activate twist2
+./sim2real.sh  # Edit NIC inside if needed
+```
+
+**Terminal 2**: Start teleoperation
+
+```bash
+conda activate gmr
+./teleop.sh    # Edit redis_ip/height/target_fps if needed
+```
+
+### Simulation Deployment
+
+**Terminal 1**: Start the simulation controller
+
+```bash
+conda activate twist2
+./sim2sim.sh
+```
+
+**Terminal 2**: Start teleoperation
+
+```bash
+conda activate gmr
+./teleop.sh
+```
+
+### Optional: Data Recording
+
+Add a third terminal to record teleoperation data:
+
 ```bash
 conda activate twist2
 python deploy_real/server_data_record.py --task_name teleop_run --data_folder ./logs
 ```
 
----
+## Controller Interface
 
-## Teleop controls (state machine)
+### State Machine
 
-From `deploy_real/xrobot_teleop_to_robot_w_hand.py`:
+The teleop system operates with the following states:
 
-- **States:** `idle → teleop → pause → teleop ...`; `exit` ends program.
-- **Buttons (PICO controllers):**
-  - Right controller `key_one`: cycle states (idle/teleop/pause).
-  - Left controller `key_one`: exit.
-  - Left controller `axis_click`: emergency stop (kills `sim2real.sh` process).
-  - Left joystick: root xy velocity + yaw velocity.
-  - Right joystick: fine-tune root xy/yaw velocity.
-  - Triggers/grips: hand open/close (stepwise interpolation).
-- **Auto-start:** transitions from idle to teleop when motion data is available.
+```
+idle → teleop → pause → teleop → ... → exit
+```
 
----
+- **idle**: Waiting for input, no commands sent
+- **teleop**: Active control, sending commands to robot
+- **pause**: Holding current position, no new commands
+- **exit**: Shutdown teleop system
 
-## Key Redis channels
+**Auto-start**: The system automatically transitions from idle to teleop when motion data is detected.
 
-- Actions (from teleop or motion server):
-  - `action_body_unitree_g1_with_hands` (35-D mimic obs)
-  - `action_hand_left_unitree_g1_with_hands`, `action_hand_right_unitree_g1_with_hands`
-  - `action_neck_unitree_g1_with_hands` (optional)
-  - `t_action`
-- State (from low-level controller):
-  - `state_body_unitree_g1_with_hands`, `state_hand_left_*`, `state_hand_right_*`, `state_neck_*`
-  - `t_state`
-- Controller telemetry:
-  - `controller_data` (button/axis state mirrored by teleop script)
+### PICO Controller Mapping
 
-Swap the suffix if you use a different robot alias.
+Implemented in [xrobot_teleop_to_robot_w_hand.py](../../deploy_real/xrobot_teleop_to_robot_w_hand.py):
 
----
+#### Left Controller
 
-## Tuning tips
+| Input | Function |
+|-------|----------|
+| **key_one** | Exit teleop system |
+| **axis_click** | Emergency stop (kills sim2real.sh process) |
+| **Joystick** | Root XY velocity + yaw velocity |
+| **Trigger/Grip** | Left hand open/close (stepwise interpolation) |
 
-- **FPS:** In `teleop.sh`, adjust `--target_fps` to match network/GPU; enable `--measure_fps` for debugging.
-- **Height:** `--actual_human_height` improves retargeting scale.
-- **Smoothing:** Enable `--smooth` in `teleop.sh` for steadier mimic obs if motion is jittery.
-- **Network:** Use wired LAN when possible; ensure Redis IP matches across terminals.
-- **Safety:** Keep E-stop reachable; start in a neutral pose; avoid large step inputs.
+#### Right Controller
 
----
+| Input | Function |
+|-------|----------|
+| **key_one** | Cycle states (idle → teleop → pause) |
+| **Joystick** | Fine-tune root XY/yaw velocity |
+| **Trigger/Grip** | Right hand open/close (stepwise interpolation) |
+
+### Control Tips
+
+- Start in a neutral standing pose
+- Make smooth, gradual movements
+- Keep the E-stop within reach at all times
+- Avoid sudden, large-step inputs
+- Practice in simulation before real robot deployment
+
+## Redis Communication
+
+### Action Channels (Published by Teleop)
+
+| Channel | Description | Dimension |
+|---------|-------------|-----------|
+| `action_body_unitree_g1_with_hands` | Body mimic observations | 35-D vector |
+| `action_hand_left_unitree_g1_with_hands` | Left hand pose | 7-D vector |
+| `action_hand_right_unitree_g1_with_hands` | Right hand pose | 7-D vector |
+| `action_neck_unitree_g1_with_hands` | Neck control (optional) | Variable |
+| `t_action` | Action timestamp | Scalar |
+
+### State Channels (Published by Controller)
+
+| Channel | Description |
+|---------|-------------|
+| `state_body_unitree_g1_with_hands` | Robot body state |
+| `state_hand_left_*` | Left hand state |
+| `state_hand_right_*` | Right hand state |
+| `state_neck_*` | Neck state |
+| `t_state` | State timestamp |
+
+### Telemetry Channels
+
+| Channel | Description |
+|---------|-------------|
+| `controller_data` | Button/axis state from PICO controllers |
+
+**Note**: Channel suffixes change based on robot alias. Replace `unitree_g1_with_hands` with your configured robot name.
+
+## Configuration
+
+### Frame Rate Adjustment
+
+Edit [teleop.sh](../../teleop.sh) to adjust target FPS:
+
+```bash
+--target_fps 60  # Adjust based on network/GPU performance
+```
+
+Enable FPS measurement for debugging:
+
+```bash
+--measure_fps
+```
+
+### Human Height Calibration
+
+Improve retargeting accuracy by setting your actual height in [teleop.sh](../../teleop.sh):
+
+```bash
+--actual_human_height 1.75  # Height in meters
+```
+
+### Motion Smoothing
+
+Enable smoothing for steadier commands if motion is jittery:
+
+```bash
+--smooth
+```
+
+Edit [teleop.sh](../../teleop.sh) to add this flag.
+
+### Remote Redis Configuration
+
+If Redis is on a different machine, update the Redis IP in [teleop.sh](../../teleop.sh):
+
+```bash
+redis_ip="192.168.1.100"  # Replace with your Redis server IP
+```
+
+Ensure the same IP is used in controller scripts ([sim2real.sh](../../sim2real.sh) or [sim2sim.sh](../../sim2sim.sh)).
+
+### Hand Control Configuration
+
+Enable hand control in [sim2real.sh](../../sim2real.sh):
+
+```bash
+--use_hand
+```
+
+Ensure hand controllers are powered on and connected.
 
 ## Troubleshooting
 
-- **No motion / empty keys:** `redis-cli get action_body_unitree_g1_with_hands` to confirm publishing; check Redis IP in scripts.
-- **Viewer slow in sim:** Lower `--policy_frequency` in `sim2sim.sh` or disable extra visuals.
-- **Teleporting/jerk:** Use smoothing, verify tracker calibration, ensure correct human height.
-- **Hand commands ignored:** Confirm `--use_hand` in `sim2real.sh` and that hand controllers are powered/connected.
-- **Neck not moving:** Check `action_neck_*` updates; verify neck controller is running (see [Neck Module](../Concepts/NeckModule.md)).
+### Robot Not Responding
 
----
+**Symptoms**: No motion despite teleop input
 
-## Related docs
+**Diagnosis**:
+```bash
+redis-cli get action_body_unitree_g1_with_hands
+```
 
-- [Installation](../GettingStarted/Installation.md)
-- [Environments (`twist2` & `gmr`)](../GettingStarted/Environments.md)
-- [Training & Deployment Overview](TrainingAndDeployment.md)
-- [Sim2Real with Unitree (EN)](Sim2Real_Unitree_en.md)
-- [Sim2Sim Verification](Sim2Sim.md)
+**Solutions**:
+1. Verify teleop script is running in Terminal 2
+2. Check Redis IP matches in both terminals
+3. Confirm Redis server is running: `redis-cli ping`
+4. Review teleop terminal for error messages
+5. Verify XRoboToolkit PC Service is running
+
+### Slow Simulation Viewer
+
+**Symptoms**: MuJoCo viewer has low frame rate during teleop
+
+**Solutions**:
+1. Lower policy frequency in [sim2sim.sh](../../sim2sim.sh):
+   ```bash
+   --policy_frequency 50
+   ```
+2. Disable extra MuJoCo visualizations
+3. Verify GPU acceleration is available
+4. Close other GPU-intensive applications
+
+### Jerky or Teleporting Motion
+
+**Symptoms**: Robot movements are erratic or jump unexpectedly
+
+**Solutions**:
+1. Enable smoothing in [teleop.sh](../../teleop.sh):
+   ```bash
+   --smooth
+   ```
+2. Calibrate VR trackers properly
+3. Verify correct human height is set:
+   ```bash
+   --actual_human_height 1.75
+   ```
+4. Check for wireless interference with PICO headset
+5. Ensure stable network connection
+
+### Hand Commands Ignored
+
+**Symptoms**: Hand movements not reflected in robot
+
+**Solutions**:
+1. Confirm `--use_hand` flag is set in [sim2real.sh](../../sim2real.sh)
+2. Verify hand controllers are powered on and paired
+3. Check hand controller battery levels
+4. Review controller telemetry in Redis:
+   ```bash
+   redis-cli get controller_data
+   ```
+5. Ensure hand action channels are being published
+
+### Neck Not Moving
+
+**Symptoms**: Neck commands not affecting robot head
+
+**Solutions**:
+1. Verify neck action updates in Redis:
+   ```bash
+   redis-cli get action_neck_unitree_g1_with_hands
+   ```
+2. Confirm neck controller is running (see [Neck Module](../Concepts/NeckModule.md))
+3. Check neck module is enabled in deployment script
+4. Review neck controller logs for errors
+
+### XRoboToolkit Connection Issues
+
+**Symptoms**: Cannot connect to PICO headset or trackers
+
+**Solutions**:
+1. **Ensure same network**: Verify both PICO headset and PC are connected to the same network (WiFi/LAN)
+2. Verify XRoboToolkit PC Service is running
+3. Check PICO headset is in developer mode
+4. Confirm XRoboToolkit app is installed on headset
+5. Restart XRoboToolkit PC Service
+6. Re-pair PICO headset with PC
+7. Check firewall settings for XRoboToolkit
+8. **Consult original documentation**: See [XRoboToolkit Unity Client](https://github.com/XR-Robotics/XRoboToolkit-Unity-Client) for detailed setup and troubleshooting
+
+### High Latency
+
+**Symptoms**: Noticeable delay between movement and robot response
+
+**Solutions**:
+1. Switch to wired LAN connection
+2. Reduce `--target_fps` in [teleop.sh](../../teleop.sh)
+3. Move Redis server closer to controller PC
+4. Check network bandwidth utilization
+5. Verify no packet loss: `ping <redis_ip>`
+
+### Safety Best Practices
+
+1. Always keep physical E-stop accessible
+2. Start with slow, small movements
+3. Test thoroughly in simulation first
+4. Clear the workspace of obstacles
+5. Have a second person monitor during testing
+6. Practice emergency procedures before deployment
+
+## Next Steps
+
+### Simulation Testing
+Start with [Sim2Sim Verification](Sim2Sim.md) to test teleoperation safely.
+
+### Real Robot Deployment
+Progress to [Sim2Real with Unitree](Sim2Real_Unitree_en.md) for hardware deployment.
+
+### Training and Development
+Review [Training & Deployment Overview](TrainingAndDeployment.md) for the complete workflow.
+
+### Environment Setup
+See [Environments](../GettingStarted/Environments.md) for `twist2` and `gmr` configuration details.
+
+### Installation
+Refer to [Installation](../GettingStarted/Installation.md) for XRoboToolkit and dependency setup.

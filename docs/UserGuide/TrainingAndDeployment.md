@@ -28,7 +28,7 @@ This guide shows how to train a TWIST2 controller, export it to ONNX, and run it
 4. **Launch training**  
    ```bash
    bash train.sh
-   ````
+   ```
    - Monitor logs/W&B if enabled.  
    - Training produces PyTorch checkpoints (e.g., `outputs/.../model_<step>.pt`).
 5. **Evaluate in sim (optional)**  

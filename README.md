@@ -4,7 +4,7 @@ By Yanjie Ze, Siheng Zhao, Weizhuo Wang, Angjoo Kanazawa†, Rocky Duan†, Piet
 († Equal Advising)
 
 > **Note (ETHRC):**  
-> This README and the documentation structure in this fork have been prepared by the team at **ETH Robotics Center (ETHRC)** to make TWIST2 easier to install, integrate and operate in our internal environment.  
+> This README and the documentation structure in this fork have been prepared by the team at [**ETH Robotics Club (ETHRC)**](https://www.ethrobotics.ch/) to make TWIST2 easier to install, integrate and operate in our internal environment.  
 > All credit for the TWIST2 system itself goes to the original authors listed above.
 
 ---
@@ -43,7 +43,7 @@ In this ETHRC-maintained fork, we focus on:
 For complete instructions, **do not follow this README alone**.  
 Use the full docs site instead:
 
-👉 **Start here:**  
+**Start here:**  
 - [Installation Guide](https://\<your-org-or-user\>.github.io/TWIST2/GettingStarted/Installation/)  
 - [Training & Deployment Overview](https://\<your-org-or-user\>.github.io/TWIST2/UserGuide/TrainingAndDeployment/)  
 - [Teleop Pipeline](https://\<your-org-or-user\>.github.io/TWIST2/UserGuide/TeleopPipeline/)  
@@ -77,7 +77,7 @@ Use the full docs site instead:
 # Example: run sim2sim verification
 bash run_motion_server.sh   # terminal 1 (high-level motion streaming)
 bash sim2sim.sh             # terminal 2 (low-level controller)
-````
+```
 
 4. For teleop with PICO + XRoboToolkit, set up the `gmr` env and PICO SDK, then follow the **Teleop Pipeline** in the docs.
 
@@ -122,5 +122,6 @@ Related works:
 ## Contact
 
 * For questions about the **original TWIST2 project**, contact:
-  `yanjieze@stanford.edu`
-* For questions about the **ETHRC documentation / integration**, contact your ETHRC maintainers (internal).
+  [`yanjieze@stanford.edu`](mailto:yanjieze@stanford.edu)
+* For questions about the **ETHRC pipeline/integration**, contact:
+[`rzendehdel@ethz.ch`](mailto:rzendehdel@ethz.ch)

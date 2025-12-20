@@ -53,9 +53,29 @@ conda activate gmr
 
 Typical command pairs:
 
-- **Teleop to robot**: `conda activate twist2 && ./sim2real.sh` (low-level control) in one terminal; `conda activate gmr && ./teleop.sh` (teleop publisher) in another.
-- **Motion playback**: `conda activate twist2 && ./sim2real.sh` plus `conda activate twist2 && ./run_motion_server.sh`.
-- **Simulation check**: `conda activate twist2 && ./sim2sim.sh`, optionally driven by `teleop.sh` (from `gmr`) or `run_motion_server.sh`.
+- **Teleop to robot**: 
+```bash
+conda activate twist2 && ./sim2real.sh
+``` 
+(low-level control) in one terminal; 
+```bash
+conda activate gmr && ./teleop.sh
+``` 
+(teleop publisher) in another.
+- **Motion playback**: 
+```bash
+conda activate twist2 && ./sim2real.sh
+```
+plus
+```bash
+conda activate twist2 && ./run_motion_server.sh
+```
+although it's not really recommended to do it this way as the bot may cause mayhem!
+- **Simulation check**: 
+```bash
+conda activate twist2 && ./sim2sim.sh
+```
+, optionally driven by `teleop.sh` (from `gmr`) or `run_motion_server.sh`.
 
 ---
 

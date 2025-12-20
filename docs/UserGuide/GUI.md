@@ -1,63 +1,191 @@
-# GUI Usage
+# GUI Control Center
 
-This page explains the CustomTkinter control center (`gui.py`) that launches common TWIST2 services (sim2sim, sim2real, teleop, motion server, recording) and remote G1 utilities. Run it from the `twist2` env using `gui.sh`.
+The TWIST2 GUI is a CustomTkinter-based control center for managing robot services and deployments.
+
+## Quick Start
+
+Launch the GUI from the `twist2` conda environment:
 
 ```bash
 conda activate twist2
 ./gui.sh
 ```
 
----
+## Prerequisites
 
-## What the GUI controls
+- `customtkinter` installed in the `twist2` environment
+- SSH alias `g1` configured for your robot PC
+- Required scripts present in the repository root
 
-- **Remote G1 (via SSH host `g1`):**
-  - **G1 Neck Control** – `bash ~/g1-onboard/docker_neck.sh` (cleanup: `pkill -f neck_teleop.py`)
-  - **G1 ZED Teleop** – `bash ~/g1-onboard/docker_zed.sh` (cleanup: `pkill -9 OrinVideoSender`)
-  - **G1 ZED Policy** – `bash ~/g1-onboard/docker_zed_policy.sh`
-  - Quick actions: `kill_port.sh`, `test_zed.sh`, and “Start Neck & ZED Teleop” (launches both)
-  - Connection test: SSH check to host alias `g1`
-- **Local services:**
-  - **Sim2Sim Deploy** – `bash sim2sim.sh`
-  - **Sim2Real Deploy** – `bash sim2real.sh` (cleanup: `pkill -f server_low_level_g1_real_future.py`)
-  - **Offline Motion** – `bash run_motion_server.sh`
-  - **Online Teleop** – `bash teleop.sh`
-  - **Visuomotor Policy Deploy** – `bash /home/ANT.AMAZON.COM/yanjieze/lab42/src/Improved-3D-Diffusion-Policy/deploy_policy.sh` (hardcoded path; edit if you use it)
-  - **Data Recording** – `bash data_record.sh` (cleanup: `pkill -f server_data_record.py`)
-  - One-click local start: Sim2Real Deploy + Teleop + Data Recording
-- **Global controls:**
-  - Theme selector (multiple dark/light/EVA variants)
-  - “Disable Firewall” button (calls `sudo ufw disable`—use only if you intend to)
-  - “EMERGENCY STOP” kills all running panel processes
+## Overview
 
-Each panel shows status (OFFLINE/ONLINE/STARTING/ERROR), command text, output logs, and buttons: START, KILL, CLEAR. Remote panels tunnel commands via SSH (`g1`) with `StrictHostKeyChecking=no`.
+The GUI provides centralized control for:
 
----
+- **Local Services**: Simulation, deployment, teleoperation, and recording
+- **Remote G1 Services**: Camera feeds, neck control, and policy deployment via SSH
+- **System Controls**: Theme selection, firewall management, and emergency stop
 
-## How to use it
+Each service panel displays:
+- Real-time status (OFFLINE/ONLINE/STARTING/ERROR)
+- Command being executed
+- Live output logs
+- Control buttons: START, KILL, CLEAR
 
-1. **Prereqs:** `customtkinter` installed in `twist2`; SSH alias `g1` configured for your robot PC; required scripts present in expected paths (see above).
-2. **Launch:** `./gui.sh` (activates `twist2`, runs `gui.py`).
-3. **Start services:** Click START on individual panels, or use the combined buttons:
-   - Remote: “🚀 Start Neck & ZED Teleop”
-   - Local: “🚀 Start Sim2Real Deploy & Teleop & Record”
-4. **Monitor logs:** Each panel streams stdout/stderr into the embedded terminal view.
-5. **Stop services:** Use KILL on a panel; EMERGENCY STOP ends all running panels.
+## Local Services
 
----
+| Service | Script | Description | Cleanup Command |
+|---------|--------|-------------|-----------------|
+| **Sim2Sim Deploy** | `sim2sim.sh` | Run simulation-to-simulation deployment | Auto |
+| **Sim2Real Deploy** | `sim2real.sh` | Deploy to real robot | `pkill -f server_low_level_g1_real_future.py` |
+| **Offline Motion** | `run_motion_server.sh` | Start motion server | Auto |
+| **Online Teleop** | `teleop.sh` | Launch teleoperation interface | Auto |
+| **Visuomotor Policy** | `deploy_policy.sh` | Deploy vision-based policy | Auto |
+| **Data Recording** | `data_record.sh` | Record robot data | `pkill -f server_data_record.py` |
 
-## Tips & edits
+**Quick Launch**: "🚀 Start Sim2Real Deploy & Teleop & Record" starts all three services simultaneously.
 
-- **SSH host:** If your robot is not reachable as `g1`, update the SSH target in `gui.py` (`_build_ssh_command` and related calls).
-- **Paths:** Adjust the visuomotor deploy path, remote docker scripts, and kill commands to match your setup.
-- **Sim2Real NIC/ckpt:** Edit `sim2real.sh` for the correct network interface and ONNX path before launching from the GUI.
-- **Firewall button:** It hardcodes `sudo ufw disable`; remove or adapt if you do not want the GUI to modify firewall settings.
+## Remote G1 Services
 
----
+All remote services connect via SSH to host alias `g1` with `StrictHostKeyChecking=no`.
+
+| Service | Remote Script | Description | Cleanup Command |
+|---------|---------------|-------------|-----------------|
+| **G1 Neck Control** | `~/g1-onboard/docker_neck.sh` | Control robot neck | `pkill -f neck_teleop.py` |
+| **G1 ZED Teleop** | `~/g1-onboard/docker_zed.sh` | ZED camera teleoperation | `pkill -9 OrinVideoSender` |
+| **G1 ZED Policy** | `~/g1-onboard/docker_zed_policy.sh` | ZED-based policy execution | Auto |
+
+**Additional Tools**:
+- `kill_port.sh` - Kill processes on specific ports
+- `test_zed.sh` - Test ZED camera connection
+- Connection test - Verify SSH connectivity to `g1`
+
+**Quick Launch**: "🚀 Start Neck & ZED Teleop" starts both neck control and ZED teleoperation.
+
+## Global Controls
+
+### Theme Selector
+Switch between multiple dark/light/EVA theme variants. Restart may be required for full effect.
+
+### Disable Firewall
+Executes `sudo ufw disable`. Use with caution.
+
+### Emergency Stop
+Immediately kills all running panel processes.
+
+## Usage Guide
+
+### Starting Services
+
+**Individual Service**:
+1. Navigate to the desired service panel
+2. Click **START**
+3. Monitor the output log for status
+
+**Multiple Services**:
+- Use quick launch buttons for common combinations
+- Or start services individually as needed
+
+### Monitoring Services
+
+- Check the status indicator (color-coded)
+- Review the output log in each panel
+- Watch for errors in the terminal view
+
+### Stopping Services
+
+**Individual Service**:
+- Click **KILL** on the specific panel
+- Verify cleanup in the output log
+
+**All Services**:
+- Click **EMERGENCY STOP** to terminate everything
+
+**Clear Logs**:
+- Click **CLEAR** to reset the output view
+
+## Configuration
+
+### SSH Host Configuration
+
+If your robot is not reachable as `g1`, update the SSH target in [gui.py](../gui.py):
+- Modify `_build_ssh_command` and related SSH calls
+- Update the host alias throughout the file
+
+### Script Paths
+
+Edit the following paths in [gui.py](../gui.py) to match your setup:
+
+**Visuomotor Policy Path**:
+```bash
+/home/ANT.AMAZON.COM/yanjieze/lab42/src/Improved-3D-Diffusion-Policy/deploy_policy.sh
+```
+
+**Remote Docker Scripts**:
+- `~/g1-onboard/docker_neck.sh`
+- `~/g1-onboard/docker_zed.sh`
+- `~/g1-onboard/docker_zed_policy.sh`
+
+**Cleanup Commands**:
+Adjust `pkill` patterns if your script names differ.
+
+### Sim2Real Configuration
+
+Before launching Sim2Real from the GUI, edit [sim2real.sh](../../sim2real.sh):
+- Set the correct network interface
+- Update the ONNX checkpoint path
+
+### Firewall Button
+
+The firewall button executes `sudo ufw disable`. To remove or modify this functionality, edit the firewall handler in [gui.py](../gui.py).
 
 ## Troubleshooting
 
-- **SSH errors:** Confirm key/credentials and host alias `g1`; try `ssh g1` manually.
-- **Processes keep running after KILL:** Check cleanup commands; some panels use `pkill` patterns—adjust them if your script names differ.
-- **No output:** Ensure commands exist in the repo root (GUI runs with `cwd` at repo root for local panels).
-- **Wrong colors/theme glitches:** Themes are applied at startup; change in the dropdown requires restart to take full effect.
+### SSH Connection Failures
+
+**Symptoms**: Cannot connect to remote G1 services
+
+**Solutions**:
+1. Test manual SSH connection: `ssh g1`
+2. Verify SSH key/credentials are configured
+3. Check that host alias `g1` exists in `~/.ssh/config`
+4. Ensure the robot PC is powered on and network-accessible
+
+### Processes Not Stopping
+
+**Symptoms**: Services remain running after clicking KILL
+
+**Solutions**:
+1. Review cleanup commands in the output log
+2. Verify `pkill` patterns match your script names
+3. Manually kill processes: `pkill -f <script_name>`
+4. Use EMERGENCY STOP as last resort
+
+### No Output in Logs
+
+**Symptoms**: Panel shows no output after starting service
+
+**Solutions**:
+1. Verify the script exists in the repository root
+2. Check script permissions (`chmod +x <script>.sh`)
+3. Run the script manually to test: `bash <script>.sh`
+4. Review terminal for error messages
+
+### Theme or Display Issues
+
+**Symptoms**: Colors incorrect, UI elements misaligned
+
+**Solutions**:
+1. Restart the GUI after changing themes
+2. Check `customtkinter` is properly installed
+3. Try a different theme variant
+4. Restart with default theme
+
+### Service Starts but Immediately Fails
+
+**Symptoms**: Status shows ERROR shortly after STARTING
+
+**Solutions**:
+1. Review the output log for error messages
+2. Check that all dependencies are installed
+3. Verify configuration files are correct
+4. Run the script manually to identify issues
