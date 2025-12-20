@@ -1,85 +1,141 @@
 # System Overview
 
-This page gives a high-level view of the TWIST2 stack: what runs where, how the pieces talk, and which scripts to pair for common workflows.
+A high-level architectural guide to the TWIST2 stack: system components, data flow, and deployment workflows.
 
----
+## Architecture Overview
 
-## Core roles
+TWIST2 is a modular robotics framework that separates motion generation, policy execution, and robot control into distinct components communicating via Redis.
 
-- **Motion source (high level):**
-  - *Teleop:* PICO + XRoboToolkit + GMR retargeting (`deploy_real/xrobot_teleop_to_robot_w_hand.py`, launched via `teleop.sh`, env: `gmr`).
-  - *Scripted motion:* Motion playback (`deploy_real/server_motion_lib.py`, launched via `run_motion_server.sh`, env: `twist2`).
-- **Message bus:** Redis (actions + state shared across processes/machines).
-- **Policy/controller (low level):**
-  - *Simulation:* ONNX policy in MuJoCo (`deploy_real/server_low_level_g1_sim.py`, launched via `sim2sim.sh`, env: `twist2`).
-  - *Real robot:* ONNX policy on hardware (`deploy_real/server_low_level_g1_real.py`, launched via `sim2real.sh`, env: `twist2`).
-- **Robot/simulator:** Unitree G1/H1/H1_2 or MuJoCo model; receives PD targets from the low-level controller.
-- **Optional data capture:** Episode recorder + stereo vision (`deploy_real/server_data_record.py`, env: `twist2`).
-- **Optional GUI:** One-stop launcher (`gui.sh`, env: `twist2`).
+### System Components
 
----
+The TWIST2 stack consists of five primary components:
 
-## Data flow (typical teleop-to-robot)
+1. **Motion Sources** - Generate high-level motion commands
+2. **Message Bus** - Distribute actions and states across processes
+3. **Policy Controllers** - Execute trained policies and compute robot commands
+4. **Robot/Simulator** - Physical hardware or simulation environment
+5. **Optional Services** - Data recording and GUI control
 
-```
-PICO + XRoboToolkit  --(body+hand tracking)-->  GMR teleop script
-     |                                           (retarget, state machine)
-     |                   Redis: action_* keys (mimic obs + hands + neck)
-     v
-Low-level controller (sim or real)  --(PD targets)--> Robot or MuJoCo
-     |
-     |  Redis: state_* keys (proprio, hands, neck) + controller signals
-     v
-Recorder / Visualization
-```
+## Component Details
 
-- Teleop publishes *actions*; controllers publish *state*. Both share Redis so motion sources and sinks can be swapped (teleop vs. motion lib; sim vs. real).
-- Neck module is an optional action/state pair (`action_neck_*`, `state_neck_*`).
+### Motion Sources (High-Level)
 
----
+Motion sources generate action commands published to Redis.
 
-## Environments & prerequisites
+| Source Type | Implementation | Launch Script | Environment | Description |
+|-------------|----------------|---------------|-------------|-------------|
+| **Teleoperation** | [xrobot_teleop_to_robot_w_hand.py](../../deploy_real/xrobot_teleop_to_robot_w_hand.py) | [teleop.sh](../../teleop.sh) | `gmr` | PICO VR + XRoboToolkit + GMR retargeting |
+| **Scripted Motion** | [server_motion_lib.py](../../deploy_real/server_motion_lib.py) | [run_motion_server.sh](../../run_motion_server.sh) | `twist2` | Pre-recorded motion playback |
 
-- **Conda envs:** `twist2` (Python 3.8, Isaac Gym/MuJoCo, policy deployment) and `gmr` (Python 3.10+, retargeting/teleop). See [Environments](../GettingStarted/Environments.md) and [Installation](../GettingStarted/Installation.md).
-- **Redis:** must be running and reachable by all processes (same host or LAN IP).
-- **GPU drivers/CUDA:** required for Isaac Gym, ONNX GPU, and GMR acceleration.
-- **PICO/XRoboToolkit:** needed only for teleop; ensure services run before launching.
+### Message Bus
 
----
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Redis** | Redis server | Publish/subscribe message bus for actions and states |
 
-## Common launch combinations
+**Key Features**:
+- Enables process and machine distribution
+- Allows swappable motion sources and destinations
+- Supports sim-to-real transfer without code changes
 
-- **Teleop → Real robot**
-  1. `conda activate twist2 && ./sim2real.sh` (low-level controller to robot)
-  2. `conda activate gmr && ./teleop.sh` (teleop publisher)
+### Policy Controllers (Low-Level)
 
-- **Teleop → Simulation**
-  1. `conda activate twist2 && ./sim2sim.sh` (policy in MuJoCo)
-  2. `conda activate gmr && ./teleop.sh`
+Policy controllers execute ONNX models and send PD targets to robots/simulators.
 
-- **Motion playback → Real robot**
-  1. `conda activate twist2 && ./sim2real.sh`
-  2. `conda activate twist2 && ./run_motion_server.sh`
+| Controller Type | Implementation | Launch Script | Environment | Target |
+|-----------------|----------------|---------------|-------------|--------|
+| **Simulation** | [server_low_level_g1_sim.py](../../deploy_real/server_low_level_g1_sim.py) | [sim2sim.sh](../../sim2sim.sh) | `twist2` | MuJoCo simulation |
+| **Real Robot** | [server_low_level_g1_real.py](../../deploy_real/server_low_level_g1_real.py) | [sim2real.sh](../../sim2real.sh) | `twist2` | Unitree G1/H1/H1_2 |
 
-- **Motion playback → Simulation**
-  1. `conda activate twist2 && ./sim2sim.sh`
-  2. `conda activate twist2 && ./run_motion_server.sh`
+### Robot/Simulator Platforms
 
-- **Optional recording:** add `conda activate twist2 && python deploy_real/server_data_record.py --task_name <name>` alongside any of the above.
+| Platform | Models | Description |
+|----------|--------|-------------|
+| **Physical Robots** | Unitree G1, H1, H1_2 | Real humanoid robots receiving PD targets |
+| **Simulation** | MuJoCo | Physics-based simulation environment |
 
----
+### Optional Services
 
-## Safety & troubleshooting
+| Service | Implementation | Launch Script | Environment | Purpose |
+|---------|----------------|---------------|-------------|---------|
+| **Data Recording** | [server_data_record.py](../../deploy_real/server_data_record.py) | Direct Python | `twist2` | Episode recording with stereo vision |
+| **GUI Control** | [gui.py](../../gui.py) | [gui.sh](../../gui.sh) | `twist2` | Centralized launch interface |
 
-- Keep an emergency stop reachable (hardware E-stop, or left-controller axis click in teleop script).
-- If Redis keys are missing, verify Redis is running and IP/port match across scripts.
-- If teleop is slow, check network latency and GMR FPS; lower `target_fps` in `teleop.sh` if needed.
-- For Isaac Gym/MuJoCo import errors, re-check that the active env is `twist2` and `LD_LIBRARY_PATH` includes your conda `lib` (see `run_motion_server.sh`).
+## Data Flow
 
----
+### Communication Architecture
 
-## What to read next
+![Data Flow Pipeline](../media/Dataflow_Pipeline.png)
 
-- Pipeline details: [Teleop Pipeline](../UserGuide/TeleopPipeline.md)
-- Deployment: [Sim2Real with Unitree (EN)](../UserGuide/Sim2Real_Unitree_en.md)
-- Neck module: [Neck Module](NeckModule.md)
+### Redis Channels
+
+**Action Channels** (Motion Source → Controller):
+- `action_body_unitree_g1_with_hands` - Body motion commands
+- `action_hand_left_*` - Left hand pose
+- `action_hand_right_*` - Right hand pose
+- `action_neck_*` - Neck control (optional)
+- `t_action` - Action timestamp
+
+**State Channels** (Controller → System):
+- `state_body_unitree_g1_with_hands` - Robot body state
+- `state_hand_left_*` - Left hand state
+- `state_hand_right_*` - Right hand state
+- `state_neck_*` - Neck state (optional)
+- `t_state` - State timestamp
+
+### Modularity Benefits
+
+The Redis-based architecture enables:
+- **Swappable motion sources**: Switch between teleop and scripted motions without changing controllers
+- **Swappable destinations**: Test in simulation before deploying to real hardware
+- **Distributed deployment**: Run components on different machines over LAN
+- **Independent development**: Develop and test components in isolation
+
+## Prerequisites
+
+### Software Requirements
+
+| Requirement | Details |
+|-------------|---------|
+| **Conda Environment: `twist2`** | Python 3.8, Isaac Gym, MuJoCo, ONNX Runtime, policy deployment |
+| **Conda Environment: `gmr`** | Python 3.10+, GMR retargeting, XRoboToolkit, PICO SDK (teleoperation only) |
+| **Redis Server** | Running and accessible on localhost or LAN IP |
+| **GPU Drivers** | CUDA required for Isaac Gym, ONNX GPU acceleration, GMR |
+| **XRoboToolkit** | PICO PC Service and headset app (teleoperation only) |
+
+**Setup Guides**:
+- [Installation](../GettingStarted/Installation.md) - Complete installation instructions
+- [Environments](../GettingStarted/Environments.md) - Conda environment setup
+
+### Hardware Requirements (Teleoperation)
+
+| Component | Specification |
+|-----------|---------------|
+| **VR Headset** | PICO 4 Ultra (enterprise mode with VST) |
+| **Controllers** | PICO VR controllers (left and right) |
+| **Trackers** | PICO Motion Trackers |
+
+### Hardware Requirements (Real Robot)
+
+| Component | Specification |
+|-----------|---------------|
+| **Robot** | Unitree G1/H1/H1_2 |
+| **Workstation** | PC with Ethernet port, NVIDIA GPU |
+| **Network** | Wired Ethernet connection |
+| **Safety** | Physical E-stop button |
+
+## Next Steps
+
+### Getting Started
+- **Installation**: [Installation Guide](../GettingStarted/Installation.md)
+- **Environment Setup**: [Conda Environments](../GettingStarted/Environments.md)
+
+### Deployment Guides
+- **Simulation Testing**: [Sim2Sim Verification](../UserGuide/Sim2Sim.md)
+- **Real Robot Deployment**: [Sim2Real with Unitree](../UserGuide/Sim2Real_Unitree_en.md)
+- **Teleoperation Pipeline**: [Teleop Pipeline](../UserGuide/TeleopPipeline.md)
+
+### Advanced Topics
+- **Neck Control Module**: [Neck Module](NeckModule.md)
+- **GUI Control Interface**: [GUI Guide](../UserGuide/GUI.md)
+- **Training & Deployment**: [Training Overview](../UserGuide/TrainingAndDeployment.md)
